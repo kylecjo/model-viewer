@@ -30,6 +30,11 @@ struct OpenGLError : std::runtime_error
     OpenGLError(const char* what_arg) : std::runtime_error(what_arg){};
 };
 
+struct SimpleVertex
+{
+    math::Point position{};
+    math::Normal normal{};
+};
 // default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
@@ -109,6 +114,8 @@ protected:
     // Vertex buffers.
     GLuint mVao;
     GLuint mVbo;
+    // Index Buffer
+    GLuint mEbo;
 
     // Shader data.
     GLuint mVertHandle;
@@ -133,6 +140,22 @@ protected:
     GLuint mUniformCameraPosLoc;
 };
 
+
+class Mesh : public Object
+{
+public:
+    Mesh(std::vector<SimpleVertex> vertices, std::vector<size_t> indices, Colour colour);
+    Colour mColour;
+    std::vector<SimpleVertex> mVertices;
+    std::vector<size_t> mIndices;
+    void loadDataToGPU();
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight);
+
+
+};
+
+
+
 class Cube : public Object
 {
 public:
@@ -145,7 +168,6 @@ private:
     Colour mColour;
     float mLength;
     std::array<float, 18*12> mVertices;
-
 
 };
 
