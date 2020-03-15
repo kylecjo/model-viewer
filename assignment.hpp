@@ -17,6 +17,7 @@
 #include <magic_enum.hpp>
 
 using namespace atlas;
+using Colour = atlas::math::Vector;
 
 static constexpr float nearVal{1.0f};
 static constexpr float farVal{10000000000.0f};
@@ -60,7 +61,7 @@ public:
 
     void freeGPUData();
 
-    virtual void loadDataToGPU(std::array<float, 18> const& vertices) = 0;
+    virtual void loadDataToGPU() = 0;
 
     virtual void render(bool paused, int width, int height, Camera cam) = 0;
 
@@ -84,19 +85,38 @@ protected:
     GLuint mUniformModelLoc;
     GLuint mUniformViewLoc;
     GLuint mUniformProjectionLoc;
+
+    GLuint mUniformColourLoc;
 };
 
 class Triangle : public Object
 {
 public:
-    Triangle();
+    Triangle(Colour colour);
 
-    void loadDataToGPU(std::array<float, 18> const& vertices);
+    void loadDataToGPU();
 
     void render(bool paused, int width, int height, Camera cam);
 private:
-
+    Colour mColour;
     float position;
+    std::array<float, 18> mVertices;
+
+
+};
+
+class Cube : public Object
+{
+public:
+    Cube(float length, Colour colour);
+
+    void loadDataToGPU();
+
+    void render(bool paused, int width, int height, Camera cam);
+private:
+    Colour mColour;
+    float mLength;
+    std::array<float, 18*12> mVertices;
 
 
 };
@@ -106,7 +126,7 @@ class Program
 public:
     Program(int width, int height, std::string title, Camera cam);
 
-    void run(Triangle& object);
+    void run(Object& obj);
 
     void freeGPUData();
 

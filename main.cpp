@@ -2,32 +2,24 @@
 #include "glm/ext.hpp"
 #define CAM_SPEED 0.05f
 
-// ===---------------TRIANGLE-----------------===
-
-Triangle::Triangle()
-{
-    // allocate the memory to hold the program and shader data
-    mProgramHandle = glCreateProgram();
-    mVertHandle    = glCreateShader(GL_VERTEX_SHADER);
-    mFragHandle    = glCreateShader(GL_FRAGMENT_SHADER);
-}
+// ===---------------OBJECT-----------------===
 
 void Object::loadShaders()
 {
-    std::string shaderRoot{ShaderPath};
+    std::string shaderRoot{ ShaderPath };
     vertexSource =
         glx::readShaderSource(shaderRoot + "triangle.vert", IncludeDir);
     fragmentSource =
         glx::readShaderSource(shaderRoot + "triangle.frag", IncludeDir);
 
-    if (auto result{glx::compileShader(vertexSource.sourceString, mVertHandle)};
+    if (auto result{ glx::compileShader(vertexSource.sourceString, mVertHandle) };
         result)
     {
         throw OpenGLError(*result);
     }
 
     if (auto result =
-            glx::compileShader(fragmentSource.sourceString, mFragHandle);
+        glx::compileShader(fragmentSource.sourceString, mFragHandle);
         result)
     {
         throw OpenGLError(*result);
@@ -41,16 +33,76 @@ void Object::loadShaders()
     {
         throw OpenGLError(*result);
     }
-	setupUniformVariables();
+    setupUniformVariables();
 }
 
-void Triangle::loadDataToGPU(std::array<float, 18> const& vertices)
+void Object::reloadShaders()
+{
+    if (glx::shouldShaderBeReloaded(vertexSource))
+    {
+        glx::reloadShader(
+            mProgramHandle, mVertHandle, vertexSource, IncludeDir);
+    }
+
+    if (glx::shouldShaderBeReloaded(fragmentSource))
+    {
+        glx::reloadShader(
+            mProgramHandle, mFragHandle, fragmentSource, IncludeDir);
+    }
+}
+
+void Object::freeGPUData()
+{
+    // unwind all the allocations made
+    glDeleteVertexArrays(1, &mVao);
+    glDeleteBuffers(1, &mVbo);
+    glDeleteShader(mFragHandle);
+    glDeleteShader(mVertHandle);
+    glDeleteProgram(mProgramHandle);
+}
+
+void Object::setupUniformVariables()
+{
+    mUniformModelLoc = glGetUniformLocation(mProgramHandle, "model");
+    mUniformProjectionLoc = glGetUniformLocation(mProgramHandle, "proj");
+    mUniformViewLoc = glGetUniformLocation(mProgramHandle, "view");
+    mUniformColourLoc = glGetUniformLocation(mProgramHandle, "colour");
+}
+
+
+// ===---------------TRIANGLE-----------------===
+
+Triangle::Triangle(Colour colour)
+{
+    // allocate the memory to hold the program and shader data
+    mProgramHandle = glCreateProgram();
+    mVertHandle    = glCreateShader(GL_VERTEX_SHADER);
+    mFragHandle    = glCreateShader(GL_FRAGMENT_SHADER);
+
+    mColour = colour;
+
+    // clang-format off
+    std::array<float, 18> vertices
+    {
+        // Vertices          Colours
+        0.4f, -0.4f, 0.0f,   1.0f, 0.0f, 0.0f,
+       -0.4f, -0.4f, 0.0f,   0.0f, 1.0f, 0.0f,
+        0.0f,  0.4f, 0.0f,   0.0f, 0.0f, 1.0f
+    };
+    // clang-format on
+
+    mVertices = vertices;
+}
+
+
+
+void Triangle::loadDataToGPU()
 {
     // create buffer to hold triangle vertex data
     glCreateBuffers(1, &mVbo);
     // allocate and initialize buffer to vertex data
     glNamedBufferStorage(
-        mVbo, glx::size<float>(vertices.size()), vertices.data(), 0);
+        mVbo, glx::size<float>(mVertices.size()), mVertices.data(), 0);
 
     // create holder for all buffers
     glCreateVertexArrays(1, &mVao);
@@ -73,20 +125,7 @@ void Triangle::loadDataToGPU(std::array<float, 18> const& vertices)
     glVertexArrayAttribBinding(mVao, 1, 0);
 }
 
-void Object::reloadShaders()
-{
-    if (glx::shouldShaderBeReloaded(vertexSource))
-    {
-        glx::reloadShader(
-            mProgramHandle, mVertHandle, vertexSource, IncludeDir);
-    }
 
-    if (glx::shouldShaderBeReloaded(fragmentSource))
-    {
-        glx::reloadShader(
-            mProgramHandle, mFragHandle, fragmentSource, IncludeDir);
-    }
-}
 
 void Triangle::render([[maybe_unused]] bool paused,
                       [[maybe_unused]] int width,
@@ -108,19 +147,19 @@ void Triangle::render([[maybe_unused]] bool paused,
 	// giving camera in world space, so if we wanted to move it we would want to move the camera in camera space
 	auto viewMat{ glm::lookAt(cam.mEye, cam.mEye + cam.mCentre, cam.mUp) };
 	
-	if (!paused) {
-		// change value of position
-		//position = static_cast<float>(glfwGetTime()) * 64.0f;
-		if (position >= 360.0f) {
-			position = 0.0f;
-		}
-		position += 2.0f;
+	//if (!paused) {
+	//	// change value of position
+	//	//position = static_cast<float>(glfwGetTime()) * 64.0f;
+	//	if (position >= 360.0f) {
+	//		position = 0.0f;
+	//	}
+	//	position += 2.0f;
 
-	}
+	//}
 
 	//need 4x4 matrix as first argument
 	// M*V*P is the transformation matrix 
-	auto modelMat{ glm::rotate(math::Matrix4{1.0f}, glm::radians(position), glm::vec3{0.0f, 1.0f, 0.0f}) }; //use position here!
+	auto modelMat{ glm::rotate(math::Matrix4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}) }; //use position here!
 
     // tell OpenGL which program object to use to render the Triangle
     glUseProgram(mProgramHandle);
@@ -132,6 +171,7 @@ void Triangle::render([[maybe_unused]] bool paused,
 	glUniformMatrix4fv(mUniformProjectionLoc, 1, GL_FALSE, glm::value_ptr(projMat)); //do this 3 times, once per uniform variable
 	glUniformMatrix4fv(mUniformViewLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
 	glUniformMatrix4fv(mUniformModelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
+    glUniform3fv(mUniformColourLoc, 1, glm::value_ptr(mColour));
 
     // tell OpenGL which vertex array object to use to render the Triangle
     glBindVertexArray(mVao);
@@ -139,23 +179,163 @@ void Triangle::render([[maybe_unused]] bool paused,
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void Object::freeGPUData()
+
+
+
+// ===---------------CUBE-----------------===
+
+Cube::Cube(float length, Colour colour)
 {
-    // unwind all the allocations made
-    glDeleteVertexArrays(1, &mVao);
-    glDeleteBuffers(1, &mVbo);
-    glDeleteShader(mFragHandle);
-    glDeleteShader(mVertHandle);
-    glDeleteProgram(mProgramHandle);
+    // allocate the memory to hold the program and shader data
+    mProgramHandle = glCreateProgram();
+    mVertHandle = glCreateShader(GL_VERTEX_SHADER);
+    mFragHandle = glCreateShader(GL_FRAGMENT_SHADER);
+
+    mColour = colour;
+    mLength = length;
+    
+
+    std::array<float, 18*12> vertices{ //12 triangles each take 18 bytes
+        // Vertices                     /Normals
+        -mLength, -mLength, -mLength,   0.0f, 0.0f, -1.0f,
+        mLength, -mLength, -mLength,    0.0f, 0.0f, -1.0f,
+        mLength, mLength, -mLength,     0.0f, 0.0f, -1.0f,
+
+  
+        mLength, mLength, -mLength,     0.0f, 0.0f, -1.0f,
+        -mLength, mLength, -mLength,    0.0f, 0.0f, -1.0f,
+        -mLength, -mLength, -mLength,   0.0f, 0.0f, -1.0f,
+
+        -mLength, -mLength, mLength,    0.0f, 0.0f, 1.0f,
+        mLength, -mLength, mLength,     0.0f, 0.0f, 1.0f,
+        mLength, mLength, mLength,      0.0f, 0.0f, 1.0f,
+
+        mLength, mLength, mLength,      0.0f, 0.0f, 1.0f,
+        -mLength, mLength, mLength,     0.0f, 0.0f, 1.0f,
+        -mLength, -mLength, mLength,    0.0f, 0.0f, 1.0f,
+
+        -mLength, mLength, mLength,     -1.0f, 0.0f, 0.0f,
+       -mLength, mLength, -mLength,     -1.0f, 0.0f, 0.0f,
+        -mLength, -mLength, -mLength,   -1.0f, 0.0f, 0.0f,
+
+        -mLength, -mLength, -mLength,   -1.0f, 0.0f, 0.0f,
+       -mLength, -mLength, mLength,     -1.0f, 0.0f, 0.0f,
+        -mLength, mLength, mLength,     -1.0f, 0.0f, 0.0f,
+
+        mLength, mLength, mLength,      1.0f, 0.0f, 0.0f,
+        mLength, mLength, -mLength,     1.0f, 0.0f, 0.0f,
+        mLength, -mLength, -mLength,    1.0f, 0.0f, 0.0f,
+
+        mLength, -mLength, -mLength,    1.0f, 0.0f, 0.0f,
+        mLength, -mLength, mLength,     1.0f, 0.0f, 0.0f,
+        mLength, mLength, mLength,      1.0f, 0.0f, 0.0f,
+
+        -mLength,-mLength, -mLength,    -1.0f, 0.0f, 0.0f,
+       mLength, -mLength, -mLength,     -1.0f, 0.0f, 0.0f,
+        mLength, -mLength, mLength,     -1.0f, 0.0f, 0.0f,
+
+        mLength,-mLength, mLength,      -1.0f, 0.0f, 0.0f,
+       -mLength, -mLength, mLength,     -1.0f, 0.0f, 0.0f,
+        -mLength, -mLength, -mLength,   -1.0f, 0.0f, 0.0f,
+    
+        -mLength, mLength, -mLength,    0.0f, 1.0f, 0.0f,
+        mLength, mLength, -mLength,     0.0f, 1.0f, 0.0f,
+        mLength, mLength, mLength,      0.0f, 1.0f, 0.0f,
+
+        mLength, mLength, mLength,      0.0f, 1.0f, 0.0f,
+        -mLength, mLength, mLength,     0.0f, 1.0f, 0.0f,
+        -mLength, mLength, -mLength,    0.0f, 1.0f, 0.0f
+    };
+    // clang-format on
+
+    mVertices = vertices;
 }
 
-void Object::setupUniformVariables()
+
+
+void Cube::loadDataToGPU()
 {
-	mUniformModelLoc = glGetUniformLocation(mProgramHandle, "model");
-	mUniformProjectionLoc = glGetUniformLocation(mProgramHandle, "proj");
-	mUniformViewLoc = glGetUniformLocation(mProgramHandle, "view");
-	// do this for two more
+    // create buffer to hold triangle vertex data
+    glCreateBuffers(1, &mVbo);
+    // allocate and initialize buffer to vertex data
+    glNamedBufferStorage(
+        mVbo, glx::size<float>(mVertices.size()), mVertices.data(), 0);
+
+    // create holder for all buffers
+    glCreateVertexArrays(1, &mVao);
+    // bind vertex buffer to the vertex array
+    glVertexArrayVertexBuffer(mVao, 0, mVbo, 0, glx::stride<float>(6));
+
+    // enable attributes for the two components of a vertex
+    glEnableVertexArrayAttrib(mVao, 0);
+    glEnableVertexArrayAttrib(mVao, 1);
+
+    // specify to OpenGL how the vertices and colors are laid out in the buffer
+    glVertexArrayAttribFormat(
+        mVao, 0, 3, GL_FLOAT, GL_FALSE, glx::relativeOffset<float>(0));
+    glVertexArrayAttribFormat(
+        mVao, 1, 3, GL_FLOAT, GL_FALSE, glx::relativeOffset<float>(3));
+
+    // associate the vertex attributes (coordinates and color) to the vertex
+    // attribute
+    glVertexArrayAttribBinding(mVao, 0, 0);
+    glVertexArrayAttribBinding(mVao, 1, 0);
 }
+
+
+
+void Cube::render([[maybe_unused]] bool paused,
+    [[maybe_unused]] int width,
+    [[maybe_unused]] int height,
+    Camera cam)
+{
+    reloadShaders();
+
+    // **************************************
+    // assign values to MVP matrices
+    // **************************************
+
+
+
+    //glm::perspective for pinhole, research other ones
+    auto projMat{ glm::perspective(glm::radians(60.0f), static_cast<float> (width) / (height), nearVal, farVal) };
+
+    // if we wanted to change the camera it would be here
+    // giving camera in world space, so if we wanted to move it we would want to move the camera in camera space
+    auto viewMat{ glm::lookAt(cam.mEye, cam.mEye + cam.mCentre, cam.mUp) };
+
+    //if (!paused) {
+    //    // change value of position
+    //    //position = static_cast<float>(glfwGetTime()) * 64.0f;
+    //    if (position >= 360.0f) {
+    //        position = 0.0f;
+    //    }
+    //    position += 2.0f;
+
+    //}
+
+    //need 4x4 matrix as first argument
+    // M*V*P is the transformation matrix 
+    auto modelMat{ glm::rotate(math::Matrix4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f}) }; //use position here!
+
+    // tell OpenGL which program object to use to render the Triangle
+    glUseProgram(mProgramHandle);
+
+    // **************************************
+    // bind matrices to memory
+    // **************************************
+
+    glUniformMatrix4fv(mUniformProjectionLoc, 1, GL_FALSE, glm::value_ptr(projMat)); //do this 3 times, once per uniform variable
+    glUniformMatrix4fv(mUniformViewLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
+    glUniformMatrix4fv(mUniformModelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
+    glUniform3fv(mUniformColourLoc, 1, glm::value_ptr(mColour));
+
+    // tell OpenGL which vertex array object to use to render the Triangle
+    glBindVertexArray(mVao);
+    // actually render the Triangle
+    glDrawArrays(GL_TRIANGLES, 0, 216); //(mode, starting index in enabled arrays, number of indices to be rendered)
+}
+
 
 Camera::Camera(glm::vec3 eye, glm::vec3 centre, glm::vec3 up) :
     mEye{eye}, mCentre{centre}, mUp{up}, mYaw{YAW}, mPitch{PITCH}, mSensitivity{SENSITIVITY}
@@ -240,7 +420,7 @@ Program::Program(int width, int height, std::string title, Camera cam) :
     createGLContext();
 }
 
-void Program::run(Triangle& tri)
+void Program::run(Object& obj)
 {
     glEnable(GL_DEPTH_TEST);
 
@@ -259,7 +439,7 @@ void Program::run(Triangle& tri)
         // actually clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        tri.render(paused, width, height, mCamera);
+        obj.render(paused, width, height, mCamera);
 
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
@@ -297,31 +477,25 @@ void Program::createGLContext()
 int main()
 {
 
-    Camera cam{ glm::vec3{0.0f, 0.0f, 2.0f}, glm::vec3{0.0f,0.0f,-1.0f}, glm::vec3{0.0f, 1.0f, 0.0f } };
+    Camera cam{ glm::vec3{0.0f, 0.0f, 3.0f}, glm::vec3{0.0f,0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f } };
 
     try
     {
 
-        // clang-format off
-        std::array<float, 18> vertices
-        {
-            // Vertices          Colours
-            0.4f, -0.4f, 0.0f,   1.0f, 0.0f, 0.0f,
-           -0.4f, -0.4f, 0.0f,   0.0f, 1.0f, 0.0f,
-            0.0f,  0.4f, 0.0f,   0.0f, 0.0f, 1.0f
-        };
-        // clang-format on
-
-        Program prog{1280, 720, "CSC305 Lab 6", cam};
-        Triangle tri{};
-
-        tri.loadShaders();
-        tri.loadDataToGPU(vertices);
-
-        prog.run(tri);
-
+        Program prog{1280, 720, "CSC305 Assignment 3", cam};
+        Cube cube{ 0.5f, Colour{1.0f, 0.0f, 0.0f} };
+        cube.loadShaders();
+        cube.loadDataToGPU();
+        prog.run(cube);
         prog.freeGPUData();
-        tri.freeGPUData();
+        cube.freeGPUData();
+        
+        //Triangle tri{ Colour{1.0f, 0.0f, 0.0f} };
+        //tri.loadShaders();
+        //tri.loadDataToGPU();
+        //prog.run(tri);
+        //prog.freeGPUData();
+        //tri.freeGPUData();
     }
     catch (OpenGLError& err)
     {
