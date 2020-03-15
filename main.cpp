@@ -12,7 +12,7 @@ Triangle::Triangle()
     mFragHandle    = glCreateShader(GL_FRAGMENT_SHADER);
 }
 
-void Triangle::loadShaders()
+void Object::loadShaders()
 {
     std::string shaderRoot{ShaderPath};
     vertexSource =
@@ -73,7 +73,7 @@ void Triangle::loadDataToGPU(std::array<float, 18> const& vertices)
     glVertexArrayAttribBinding(mVao, 1, 0);
 }
 
-void Triangle::reloadShaders()
+void Object::reloadShaders()
 {
     if (glx::shouldShaderBeReloaded(vertexSource))
     {
@@ -139,7 +139,7 @@ void Triangle::render([[maybe_unused]] bool paused,
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void Triangle::freeGPUData()
+void Object::freeGPUData()
 {
     // unwind all the allocations made
     glDeleteVertexArrays(1, &mVao);
@@ -149,7 +149,7 @@ void Triangle::freeGPUData()
     glDeleteProgram(mProgramHandle);
 }
 
-void Triangle::setupUniformVariables()
+void Object::setupUniformVariables()
 {
 	mUniformModelLoc = glGetUniformLocation(mProgramHandle, "model");
 	mUniformProjectionLoc = glGetUniformLocation(mProgramHandle, "proj");
@@ -184,26 +184,24 @@ Program::Program(int width, int height, std::string title, Camera cam) :
 
 	
 	callbacks.keyPressCallback = [&](int key, int, int action, int) {
-        std::cout << key << std::endl;
-        std::cout << action << std::endl;
 
         if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
 			paused = !paused;
 		}
         //https://learnopengl.com/Getting-started/Camera
-        if (key == GLFW_KEY_UP && ( action == GLFW_PRESS || action == GLFW_REPEAT))
+        if (key == GLFW_KEY_W && ( action == GLFW_PRESS || action == GLFW_REPEAT))
         {
             mCamera.mEye += CAM_SPEED * mCamera.mCentre;
         }
-        if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
         {
             mCamera.mEye -= CAM_SPEED * mCamera.mCentre;
         }
-        if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
         {
             mCamera.mEye -= glm::normalize(glm::cross(mCamera.mCentre, mCamera.mUp)) * CAM_SPEED;
         }
-        if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
         {
             mCamera.mEye += glm::normalize(glm::cross(mCamera.mCentre, mCamera.mUp)) * CAM_SPEED;
         }

@@ -51,22 +51,20 @@ private:
 
 };
 
-class Triangle
+class Object
 {
 public:
-    Triangle();
-
     void loadShaders();
-
-    void loadDataToGPU(std::array<float, 18> const& vertices);
 
     void reloadShaders();
 
-    void render(bool paused, int width, int height, Camera cam);
-
     void freeGPUData();
 
-private:
+    virtual void loadDataToGPU(std::array<float, 18> const& vertices) = 0;
+
+    virtual void render(bool paused, int width, int height, Camera cam) = 0;
+
+protected:
     void setupUniformVariables(); //called at end of render
 
     float position;
@@ -86,6 +84,21 @@ private:
     GLuint mUniformModelLoc;
     GLuint mUniformViewLoc;
     GLuint mUniformProjectionLoc;
+};
+
+class Triangle : public Object
+{
+public:
+    Triangle();
+
+    void loadDataToGPU(std::array<float, 18> const& vertices);
+
+    void render(bool paused, int width, int height, Camera cam);
+private:
+
+    float position;
+
+
 };
 
 class Program
