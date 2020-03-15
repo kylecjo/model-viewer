@@ -70,6 +70,7 @@ void Object::setupUniformVariables()
     mUniformAmbientLoc = glGetUniformLocation(mProgramHandle, "ambient");
     mUniformPointLightPosLoc = glGetUniformLocation(mProgramHandle, "pointLightPos");
     mUniformPointLightColLoc = glGetUniformLocation(mProgramHandle, "pointLightCol");
+    mUniformCameraPosLoc = glGetUniformLocation(mProgramHandle, "cameraPos");
 }
 
 // ===---------------CUBE-----------------===
@@ -222,6 +223,7 @@ void Cube::render([[maybe_unused]] bool paused,
     glUniform3fv(mUniformAmbientLoc, 1, glm::value_ptr(ambient));
     glUniform3fv(mUniformPointLightPosLoc, 1, glm::value_ptr(pointLight.mPos));
     glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.mColour));
+    glUniform3fv(mUniformCameraPosLoc, 1, glm::value_ptr(cam.mEye));
 
 
     // tell OpenGL which vertex array object to use to render the Triangle

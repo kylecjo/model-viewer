@@ -129,6 +129,8 @@ protected:
     GLuint mUniformPointLightColLoc;
 
     GLuint mUniformColourLoc;
+
+    GLuint mUniformCameraPosLoc;
 };
 
 class Cube : public Object
