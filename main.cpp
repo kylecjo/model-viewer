@@ -70,6 +70,8 @@ void Object::setupUniformVariables()
     mUniformAmbientLoc = glGetUniformLocation(mProgramHandle, "ambient");
     mUniformPointLightPosLoc = glGetUniformLocation(mProgramHandle, "pointLightPos");
     mUniformPointLightColLoc = glGetUniformLocation(mProgramHandle, "pointLightCol");
+    mUniformDirectionalColLoc = glGetUniformLocation(mProgramHandle, "directionalCol");
+    mUniformDirectionalDirLoc = glGetUniformLocation(mProgramHandle, "directionalDir");
     mUniformCameraPosLoc = glGetUniformLocation(mProgramHandle, "cameraPos");
 }
 
@@ -178,7 +180,7 @@ void Cube::loadDataToGPU()
 void Cube::render([[maybe_unused]] bool paused,
     [[maybe_unused]] int width,
     [[maybe_unused]] int height,
-    Camera cam, glm::vec3 ambient, PointLight pointLight)
+    Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional)
 {
     reloadShaders();
 
@@ -224,6 +226,8 @@ void Cube::render([[maybe_unused]] bool paused,
     glUniform3fv(mUniformPointLightPosLoc, 1, glm::value_ptr(pointLight.mPos));
     glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.mColour));
     glUniform3fv(mUniformCameraPosLoc, 1, glm::value_ptr(cam.mEye));
+    glUniform3fv(mUniformDirectionalDirLoc, 1, glm::value_ptr(directional.mDir));
+    glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.mColour));
 
 
     // tell OpenGL which vertex array object to use to render the Triangle
@@ -243,18 +247,23 @@ Camera::Camera(glm::vec3 eye, glm::vec3 centre, glm::vec3 up) :
 
 Ambient::Ambient(Colour col, float rad) :
     mColour{ col }, mRadiance{ rad }
-{};
+{}
 
 PointLight::PointLight(atlas::math::Point pos, Colour col, float rad) :
     mPos{ pos }, mColour{ col }, mRadiance{ rad }
 {}
 
 
+Directional::Directional(atlas::math::Vector dir, Colour col, float rad) :
+    mDir{dir}, mColour{col}, mRadiance{rad}
+{}
+
+
 
 // ===------------IMPLEMENTATIONS-------------===
 
-Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight) :
-    settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight},
+Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional) :
+    settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight}, mDirectional{directional},
     firstMouse{true}, lastX{settings.size.width /2.0f}, lastY{settings.size.width/2.0f}
 {
     settings.size.width  = width;
@@ -349,7 +358,7 @@ void Program::run(Object& obj)
         // actually clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        obj.render(paused, width, height, mCamera, mAmbient, mPointLight);
+        obj.render(paused, width, height, mCamera, mAmbient, mPointLight, mDirectional);
 
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
@@ -396,8 +405,10 @@ int main()
         glm::vec3 ambient = a.L();
 
         PointLight p{ atlas::math::Point{0.0f, 0.0f, 3.0f}, Colour{1.0f, 1.0f, 1.0f }, 2.0f };
+        Directional d{ atlas::math::Vector{0.0f, 0.0f, -1.0f} , Colour{ 1.0f, 1.0f, 1.0f }, 2.0f };
+   
 
-        Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p};
+        Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p, d};
         Cube cube{ 1.0f, Colour{1.0f, 0.647f, 0.0f} };
         cube.loadShaders();
         cube.loadDataToGPU();
