@@ -1,6 +1,6 @@
 #include "assignment.hpp"
 #include "glm/ext.hpp"
-#define CAM_SPEED 0.05f
+#define CAM_SPEED 0.2f
 
 // ===---------------OBJECT-----------------===
 
@@ -68,6 +68,8 @@ void Object::setupUniformVariables()
     mUniformViewLoc = glGetUniformLocation(mProgramHandle, "view");
     mUniformColourLoc = glGetUniformLocation(mProgramHandle, "colour");
     mUniformAmbientLoc = glGetUniformLocation(mProgramHandle, "ambient");
+    mUniformPointLightPosLoc = glGetUniformLocation(mProgramHandle, "pointLightPos");
+    mUniformPointLightColLoc = glGetUniformLocation(mProgramHandle, "pointLightCol");
 }
 
 // ===---------------CUBE-----------------===
@@ -175,7 +177,7 @@ void Cube::loadDataToGPU()
 void Cube::render([[maybe_unused]] bool paused,
     [[maybe_unused]] int width,
     [[maybe_unused]] int height,
-    Camera cam, glm::vec3 ambient)
+    Camera cam, glm::vec3 ambient, PointLight pointLight)
 {
     reloadShaders();
 
@@ -218,6 +220,8 @@ void Cube::render([[maybe_unused]] bool paused,
     glUniformMatrix4fv(mUniformModelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
     glUniform3fv(mUniformColourLoc, 1, glm::value_ptr(mColour));
     glUniform3fv(mUniformAmbientLoc, 1, glm::value_ptr(ambient));
+    glUniform3fv(mUniformPointLightPosLoc, 1, glm::value_ptr(pointLight.mPos));
+    glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.mColour));
 
 
     // tell OpenGL which vertex array object to use to render the Triangle
@@ -239,11 +243,16 @@ Ambient::Ambient(Colour col, float rad) :
     mColour{ col }, mRadiance{ rad }
 {};
 
+PointLight::PointLight(atlas::math::Point pos, Colour col, float rad) :
+    mPos{ pos }, mColour{ col }, mRadiance{ rad }
+{}
+
+
 
 // ===------------IMPLEMENTATIONS-------------===
 
-Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient) :
-    settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient},
+Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight) :
+    settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight},
     firstMouse{true}, lastX{settings.size.width /2.0f}, lastY{settings.size.width/2.0f}
 {
     settings.size.width  = width;
@@ -338,7 +347,7 @@ void Program::run(Object& obj)
         // actually clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        obj.render(paused, width, height, mCamera, mAmbient);
+        obj.render(paused, width, height, mCamera, mAmbient, mPointLight);
 
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
@@ -376,7 +385,7 @@ void Program::createGLContext()
 int main()
 {
 
-    Camera cam{ glm::vec3{0.0f, 0.0f, 3.0f}, glm::vec3{0.0f,0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f } };
+    Camera cam{ glm::vec3{0.0f, 0.0f, 4.0f}, glm::vec3{0.0f,0.0f, -1.0f}, glm::vec3{0.0f, 1.0f, 0.0f } };
 
     try
     {
@@ -384,8 +393,10 @@ int main()
         Ambient a{ Colour{1.0f, 1.0f, 1.0f}, 0.2f };
         glm::vec3 ambient = a.L();
 
-        Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient};
-        Cube cube{ 1.0f, Colour{1.0f, 0.0f, 0.0f} };
+        PointLight p{ atlas::math::Point{0.0f, 0.0f, 3.0f}, Colour{1.0f, 1.0f, 1.0f }, 2.0f };
+
+        Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p};
+        Cube cube{ 1.0f, Colour{1.0f, 0.647f, 0.0f} };
         cube.loadShaders();
         cube.loadDataToGPU();
         prog.run(cube);

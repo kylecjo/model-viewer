@@ -33,7 +33,43 @@ struct OpenGLError : std::runtime_error
 // default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SENSITIVITY = 0.1f;
+const float SENSITIVITY = 0.05f;
+
+class Light {
+public:
+    Colour mColour;
+    float mRadiance;
+};
+
+class Ambient : public Light {
+public:
+    Ambient(Colour col, float rad);
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mColour * mRadiance;
+    }
+
+};
+
+class PointLight : public Light {
+public:
+    PointLight(atlas::math::Point pos, Colour col, float rad);
+
+    atlas::math::Point mPos;
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mRadiance * mColour;
+    }
+
+};
 
 
 class Camera
@@ -63,7 +99,7 @@ public:
 
     virtual void loadDataToGPU() = 0;
 
-    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient) = 0;
+    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight) = 0;
 
 protected:
     void setupUniformVariables(); //called at end of render
@@ -88,6 +124,9 @@ protected:
 
     // Light
     GLuint mUniformAmbientLoc;
+    // Point Light data
+    GLuint mUniformPointLightPosLoc;
+    GLuint mUniformPointLightColLoc;
 
     GLuint mUniformColourLoc;
 };
@@ -99,7 +138,7 @@ public:
 
     void loadDataToGPU();
 
-    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient);
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight);
 private:
     Colour mColour;
     float mLength;
@@ -108,30 +147,12 @@ private:
 
 };
 
-class Light {
-public:
-    Colour mColour;
-    float mRadiance;
-};
 
-class Ambient : public Light {
-public:
-    Ambient(Colour col, float rad);
-
-    Colour mColour;
-
-    float mRadiance;
-
-    Colour L() {
-        return mColour * mRadiance;
-    }
-
-};
 
 class Program
 {
 public:
-    Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient);
+    Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight);
 
     void run(Object& obj);
 
@@ -157,4 +178,5 @@ private:
     Camera mCamera; 
     
     glm::vec3 mAmbient;
+    PointLight mPointLight;
 };
