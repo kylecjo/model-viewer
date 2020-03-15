@@ -1,6 +1,7 @@
 #version 450 core
 
 in vec3 vertexColour;
+in vec3 Normal;
 
 out vec4 fragColour;
 

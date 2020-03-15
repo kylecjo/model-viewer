@@ -7,12 +7,14 @@ uniform mat4 model;
 uniform mat4 proj;
 uniform mat4 view;
 uniform vec3 colour;
-
+uniform vec3 ambient;
 
 out vec3 vertexColour;
+out vec3 Normal;
 
 void main()
 {
     gl_Position =  proj * view * model * vec4(position, 1.0);
-    vertexColour = colour;
+    vertexColour = ambient * colour;
+    Normal = normal;
 }

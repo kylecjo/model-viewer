@@ -63,7 +63,7 @@ public:
 
     virtual void loadDataToGPU() = 0;
 
-    virtual void render(bool paused, int width, int height, Camera cam) = 0;
+    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient) = 0;
 
 protected:
     void setupUniformVariables(); //called at end of render
@@ -86,23 +86,10 @@ protected:
     GLuint mUniformViewLoc;
     GLuint mUniformProjectionLoc;
 
+    // Light
+    GLuint mUniformAmbientLoc;
+
     GLuint mUniformColourLoc;
-};
-
-class Triangle : public Object
-{
-public:
-    Triangle(Colour colour);
-
-    void loadDataToGPU();
-
-    void render(bool paused, int width, int height, Camera cam);
-private:
-    Colour mColour;
-    float position;
-    std::array<float, 18> mVertices;
-
-
 };
 
 class Cube : public Object
@@ -112,7 +99,7 @@ public:
 
     void loadDataToGPU();
 
-    void render(bool paused, int width, int height, Camera cam);
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient);
 private:
     Colour mColour;
     float mLength;
@@ -121,10 +108,30 @@ private:
 
 };
 
+class Light {
+public:
+    Colour mColour;
+    float mRadiance;
+};
+
+class Ambient : public Light {
+public:
+    Ambient(Colour col, float rad);
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mColour * mRadiance;
+    }
+
+};
+
 class Program
 {
 public:
-    Program(int width, int height, std::string title, Camera cam);
+    Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient);
 
     void run(Object& obj);
 
@@ -148,4 +155,6 @@ private:
     float lastY;
 
     Camera mCamera; 
+    
+    glm::vec3 mAmbient;
 };
