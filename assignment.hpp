@@ -76,6 +76,22 @@ public:
 
 };
 
+class Directional : public Light {
+public:
+    Directional(atlas::math::Vector dir,  Colour col, float rad);
+
+    atlas::math::Vector mDir;
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mRadiance * mColour;
+    }
+
+};
+
 
 class Camera
 {
@@ -104,7 +120,8 @@ public:
 
     virtual void loadDataToGPU() = 0;
 
-    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight) = 0;
+    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, 
+        PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag) = 0;
 
 protected:
     void setupUniformVariables(); //called at end of render
@@ -134,10 +151,17 @@ protected:
     // Point Light data
     GLuint mUniformPointLightPosLoc;
     GLuint mUniformPointLightColLoc;
+    // Directional Light Data
+    GLuint mUniformDirectionalDirLoc;
+    GLuint mUniformDirectionalColLoc;
+    GLuint mUniformDirectionalFlagLoc;
 
     GLuint mUniformColourLoc;
 
     GLuint mUniformCameraPosLoc;
+
+    GLuint mUniformSpecularFlagLoc;
+
 };
 
 
@@ -162,7 +186,7 @@ public:
 
     void loadDataToGPU();
 
-    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight);
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag);
 private:
     Colour mColour;
     float mLength;
@@ -175,7 +199,7 @@ private:
 class Program
 {
 public:
-    Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight);
+    Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional);
 
     void run(Object& obj, Object& obj2);
 
@@ -203,4 +227,7 @@ private:
     
     glm::vec3 mAmbient;
     PointLight mPointLight;
+    Directional mDirectional;
+    bool mSpecularFlag;
+    bool mDirectionalFlag;
 };
