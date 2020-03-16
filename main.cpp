@@ -73,6 +73,7 @@ void Object::setupUniformVariables()
     mUniformDirectionalColLoc = glGetUniformLocation(mProgramHandle, "directionalCol");
     mUniformDirectionalDirLoc = glGetUniformLocation(mProgramHandle, "directionalDir");
     mUniformCameraPosLoc = glGetUniformLocation(mProgramHandle, "cameraPos");
+    mUniformSpecularFlagLoc = glGetUniformLocation(mProgramHandle, "specularFlag");
 }
 
 // ===---------------CUBE-----------------===
@@ -180,7 +181,7 @@ void Cube::loadDataToGPU()
 void Cube::render([[maybe_unused]] bool paused,
     [[maybe_unused]] int width,
     [[maybe_unused]] int height,
-    Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional)
+    Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag)
 {
     reloadShaders();
 
@@ -228,6 +229,7 @@ void Cube::render([[maybe_unused]] bool paused,
     glUniform3fv(mUniformCameraPosLoc, 1, glm::value_ptr(cam.mEye));
     glUniform3fv(mUniformDirectionalDirLoc, 1, glm::value_ptr(directional.mDir));
     glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.mColour));
+    glUniform1i(mUniformSpecularFlagLoc, (GLint) specularFlag);
 
 
     // tell OpenGL which vertex array object to use to render the Triangle
@@ -264,7 +266,7 @@ Directional::Directional(atlas::math::Vector dir, Colour col, float rad) :
 
 Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional) :
     settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight}, mDirectional{directional},
-    firstMouse{true}, lastX{settings.size.width /2.0f}, lastY{settings.size.width/2.0f}
+    firstMouse{true}, lastX{settings.size.width /2.0f}, lastY{settings.size.width/2.0f}, mSpecularFlag{}
 {
     settings.size.width  = width;
     settings.size.height = height;
@@ -284,9 +286,10 @@ Program::Program(int width, int height, std::string title, Camera cam, glm::vec3
 	
 	callbacks.keyPressCallback = [&](int key, int, int action, int) {
 
+
         if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
-			paused = !paused;
-		}
+            mSpecularFlag = !mSpecularFlag;
+        }
         //https://learnopengl.com/Getting-started/Camera
         if (key == GLFW_KEY_W && ( action == GLFW_PRESS || action == GLFW_REPEAT))
         {
@@ -358,7 +361,7 @@ void Program::run(Object& obj)
         // actually clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        obj.render(paused, width, height, mCamera, mAmbient, mPointLight, mDirectional);
+        obj.render(paused, width, height, mCamera, mAmbient, mPointLight, mDirectional, mSpecularFlag);
 
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
@@ -404,8 +407,8 @@ int main()
         Ambient a{ Colour{1.0f, 1.0f, 1.0f}, 0.2f };
         glm::vec3 ambient = a.L();
 
-        PointLight p{ atlas::math::Point{0.0f, 0.0f, 3.0f}, Colour{1.0f, 1.0f, 1.0f }, 2.0f };
-        Directional d{ atlas::math::Vector{0.0f, 0.0f, -1.0f} , Colour{ 1.0f, 1.0f, 1.0f }, 2.0f };
+        PointLight p{ atlas::math::Point{0.0f, 0.0f, 3.0f}, Colour{1.0f, 1.0f, 1.0f }, 1.0f };
+        Directional d{ atlas::math::Vector{0.0f, 1.0f, 1.0f} , Colour{ 1.0f, 1.0f, 1.0f }, 1.0f };
    
 
         Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p, d};

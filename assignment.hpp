@@ -115,7 +115,7 @@ public:
 
     virtual void loadDataToGPU() = 0;
 
-    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional) = 0;
+    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag) = 0;
 
 protected:
     void setupUniformVariables(); //called at end of render
@@ -150,6 +150,9 @@ protected:
     GLuint mUniformColourLoc;
 
     GLuint mUniformCameraPosLoc;
+
+    GLuint mUniformSpecularFlagLoc;
+
 };
 
 class Cube : public Object
@@ -159,7 +162,7 @@ public:
 
     void loadDataToGPU();
 
-    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional);
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag);
 private:
     Colour mColour;
     float mLength;
@@ -201,4 +204,5 @@ private:
     glm::vec3 mAmbient;
     PointLight mPointLight;
     Directional mDirectional;
+    bool mSpecularFlag;
 };
