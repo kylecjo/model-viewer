@@ -2,7 +2,7 @@
 #include "glm/ext.hpp"
 #include <atlas/utils/LoadObjFile.hpp>
 
-#define CAM_SPEED 0.2f
+#define CAM_SPEED 2.0f
 
 // ===---------------OBJECT-----------------===
 
@@ -78,16 +78,34 @@ void Object::setupUniformVariables()
 
 // ===---------------MESH-----------------===
 
-Mesh::Mesh(std::vector<SimpleVertex> vertices, std::vector<size_t> indices, Colour colour) :
-    mVertices{vertices}, mIndices{indices}, mColour{colour}
+Mesh::Mesh(atlas::utils::ObjMesh mesh, Colour colour) :
+     mColour{colour}
 {
     mProgramHandle = glCreateProgram();
     mVertHandle = glCreateShader(GL_VERTEX_SHADER);
     mFragHandle = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    std::vector<SimpleVertex> sVertices;
+    std::vector<GLuint> sIndices;
+
+    for (atlas::utils::Vertex v : mesh.shapes[0].vertices) {
+        SimpleVertex sV;
+        sV.position = v.position;
+        sV.normal = v.normal;
+        sVertices.push_back(sV);
+    }
+    for (size_t i : mesh.shapes[0].indices) {
+        sIndices.push_back((GLuint)i);
+    }
+    mVertices = sVertices;
+    mIndices = sIndices;
 }
 
 
 void Mesh::loadDataToGPU() {
+
+    // create holder for all buffers
+    glCreateVertexArrays(1, &mVao);
 
     // create buffer to hold triangle vertex data
     glCreateBuffers(1, &mVbo);
@@ -97,10 +115,9 @@ void Mesh::loadDataToGPU() {
 
     glCreateBuffers(1, &mEbo);
     glNamedBufferStorage(
-        mEbo, mIndices.size() * sizeof(size_t), mIndices.data(), 0);
+        mEbo, mIndices.size() * sizeof(GLuint), mIndices.data(), 0);
 
-    // create holder for all buffers
-    glCreateVertexArrays(1, &mVao);
+
     // bind vertex buffer to the vertex array
     glVertexArrayVertexBuffer(mVao, 0, mVbo, 0, glx::stride<float>(6));
     // bind element buffer to vertex array
@@ -358,7 +375,7 @@ PointLight::PointLight(atlas::math::Point pos, Colour col, float rad) :
 
 Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight) :
     settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight},
-    firstMouse{true}, lastX{settings.size.width /2.0f}, lastY{settings.size.width/2.0f}
+    firstMouse{ true }, lastX{ settings.size.width / 2.0f }, lastY{ settings.size.width / 2.0f }, meshFlag{}
 {
     settings.size.width  = width;
     settings.size.height = height;
@@ -381,6 +398,9 @@ Program::Program(int width, int height, std::string title, Camera cam, glm::vec3
         if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
 			paused = !paused;
 		}
+        if (key == GLFW_KEY_M && action == GLFW_RELEASE) {
+            meshFlag = !meshFlag;
+        }
         //https://learnopengl.com/Getting-started/Camera
         if (key == GLFW_KEY_W && ( action == GLFW_PRESS || action == GLFW_REPEAT))
         {
@@ -433,7 +453,7 @@ Program::Program(int width, int height, std::string title, Camera cam, glm::vec3
     createGLContext();
 }
 
-void Program::run(Object& obj)
+void Program::run(Object& obj, Object& obj2)
 {
     glEnable(GL_DEPTH_TEST);
 
@@ -452,7 +472,13 @@ void Program::run(Object& obj)
         // actually clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        obj.render(paused, width, height, mCamera, mAmbient, mPointLight);
+        if (!meshFlag) {
+            obj.render(paused, width, height, mCamera, mAmbient, mPointLight);
+        }
+        else {
+            obj2.render(paused, width, height, mCamera, mAmbient, mPointLight);
+
+        }
 
         glfwSwapBuffers(mWindow);
         glfwPollEvents();
@@ -502,47 +528,21 @@ int main()
 
         Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p};
         
-        atlas::utils::ObjMesh m = atlas::utils::loadObjMesh("C:\\Users\\Kyle\\Desktop\\csc305\\mesh\\cube\\cube.obj").value();
-        std::cout << sizeof(atlas::utils::Vertex::position) << std::endl;
-        std::cout << sizeof(atlas::utils::Vertex::normal) << std::endl;
-        std::cout << sizeof(atlas::utils::Vertex::texCoord) << std::endl;
-        std::cout << sizeof(atlas::utils::Vertex::index) << std::endl;
-        std::cout << sizeof(atlas::utils::Vertex::faceId) << std::endl;
+        std::string shaderRoot{ ShaderPath };
 
-        std::cout << &m.shapes[0].vertices[0].position << std::endl;
-        std::cout << &m.shapes[0].vertices[0].normal << std::endl;
-        std::cout << &m.shapes[0].vertices[0].texCoord << std::endl;
-        std::cout << &m.shapes[0].vertices[0].index << std::endl;
-        std::cout << &m.shapes[0].vertices[0].faceId << std::endl;
-        std::cout << &m.shapes[0].vertices[1].position << std::endl;
-
-        std::cout << m.shapes[0].indices.size() << std::endl;
-
-        std::vector<SimpleVertex> sVertices;
-        
-        for (atlas::utils::Vertex v : m.shapes[0].vertices) {
-            SimpleVertex sV;
-            sV.position = v.position;
-            sV.normal = v.normal;
-            sVertices.push_back(sV);
-        }
-
-
-        Mesh mesh{ sVertices, m.shapes[0].indices, Colour {1.0f, 0.647f, 0.0f} };
-
+        atlas::utils::ObjMesh m = atlas::utils::loadObjMesh(shaderRoot + "bunny.obj").value();
+        Mesh mesh{ m, Colour {1.0f, 0.647f, 0.0f} };
         mesh.loadShaders();
         mesh.loadDataToGPU();
-        prog.run(mesh);
-        prog.freeGPUData(); //remember to free ebo 
+
+        Cube cube{ 1.0f, Colour{1.0f, 0.647f, 0.0f} };
+        cube.loadShaders();
+        cube.loadDataToGPU();
+        
+        prog.run(cube, mesh);
+        prog.freeGPUData();
+        cube.freeGPUData();
         mesh.freeGPUData();
-
-
-        //Cube cube{ 1.0f, Colour{1.0f, 0.647f, 0.0f} };
-        //cube.loadShaders();
-        //cube.loadDataToGPU();
-        //prog.run(cube);
-        //prog.freeGPUData();
-        //cube.freeGPUData();
         
     }
     catch (OpenGLError& err)

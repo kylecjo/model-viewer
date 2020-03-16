@@ -144,13 +144,12 @@ protected:
 class Mesh : public Object
 {
 public:
-    Mesh(std::vector<SimpleVertex> vertices, std::vector<size_t> indices, Colour colour);
+    Mesh(atlas::utils::ObjMesh, Colour colour);
     Colour mColour;
     std::vector<SimpleVertex> mVertices;
-    std::vector<size_t> mIndices;
+    std::vector<GLuint> mIndices;
     void loadDataToGPU();
     void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight);
-
 
 };
 
@@ -178,7 +177,7 @@ class Program
 public:
     Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight);
 
-    void run(Object& obj);
+    void run(Object& obj, Object& obj2);
 
     void freeGPUData();
 
@@ -195,6 +194,7 @@ private:
     glx::WindowCallbacks callbacks;
 
     bool paused;
+    bool meshFlag;
     bool firstMouse;
     float lastX;
     float lastY;
