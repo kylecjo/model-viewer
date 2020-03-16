@@ -2,7 +2,7 @@
 #include "glm/ext.hpp"
 #include <atlas/utils/LoadObjFile.hpp>
 
-#define CAM_SPEED 2.0f
+#define CAM_SPEED 0.2f
 
 // ===---------------OBJECT-----------------===
 
@@ -180,10 +180,10 @@ void Mesh::render([[maybe_unused]] bool paused,
     glUniform3fv(mUniformColourLoc, 1, glm::value_ptr(mColour));
     glUniform3fv(mUniformAmbientLoc, 1, glm::value_ptr(ambient));
     glUniform3fv(mUniformPointLightPosLoc, 1, glm::value_ptr(pointLight.mPos));
-    glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.mColour));
+    glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.L()));
     glUniform3fv(mUniformCameraPosLoc, 1, glm::value_ptr(cam.mEye));
     glUniform3fv(mUniformDirectionalDirLoc, 1, glm::value_ptr(directional.mDir));
-    glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.mColour));
+    glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.L()));
     glUniform1i(mUniformSpecularFlagLoc, (GLint)specularFlag);
     glUniform1i(mUniformDirectionalFlagLoc, (GLint)directionalFlag);
 
@@ -349,10 +349,10 @@ void Cube::render([[maybe_unused]] bool paused,
     glUniform3fv(mUniformColourLoc, 1, glm::value_ptr(mColour));
     glUniform3fv(mUniformAmbientLoc, 1, glm::value_ptr(ambient));
     glUniform3fv(mUniformPointLightPosLoc, 1, glm::value_ptr(pointLight.mPos));
-    glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.mColour));
+    glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.L()));
     glUniform3fv(mUniformCameraPosLoc, 1, glm::value_ptr(cam.mEye));
     glUniform3fv(mUniformDirectionalDirLoc, 1, glm::value_ptr(directional.mDir));
-    glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.mColour));
+    glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.L()));
     glUniform1i(mUniformSpecularFlagLoc, (GLint) specularFlag);
     glUniform1i(mUniformDirectionalFlagLoc, (GLint) directionalFlag);
 
@@ -542,18 +542,18 @@ int main()
     try
     {
 
-        Ambient a{ Colour{1.0f, 1.0f, 1.0f}, 0.2f };
+        Ambient a{ Colour{1.0f, 1.0f, 1.0f}, 0.1f };
         glm::vec3 ambient = a.L();
 
-        PointLight p{ atlas::math::Point{0.0f, 3.0f, 3.0f}, Colour{1.0f, 1.0f, 1.0f }, 2.0f };
-        Directional d{ atlas::math::Vector{0.0f, 1.0f, 0.0f} , Colour{ 1.0f, 1.0f, 1.0f }, 0.5f };
+        PointLight p{ atlas::math::Point{0.0f, 0.0f, 2.0f}, Colour{1.0f, 1.0f, 1.0f }, 0.9f };
+        Directional d{ atlas::math::Vector{1.0f, 0.0f, 0.0f} , Colour{ 1.0f, 1.0f, 1.0f }, 0.9f };
 
         Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p, d};
         
         std::string shaderRoot{ ShaderPath };
 
         atlas::utils::ObjMesh m = atlas::utils::loadObjMesh(shaderRoot + "suzanne.obj").value();
-        Mesh mesh{ m, Colour {1.0f, 0.647f, 0.0f} };
+        Mesh mesh{ m, Colour {0.2f, 0.8f, 0.0f} };
         mesh.loadShaders();
         mesh.loadDataToGPU();
 
