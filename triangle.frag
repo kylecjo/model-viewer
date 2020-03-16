@@ -7,6 +7,7 @@ uniform vec3 directionalCol;
 uniform vec3 ambient;
 uniform vec3 cameraPos;
 uniform int specularFlag;
+uniform int directionalFlag;
 
 in vec3 vertexColour;
 in vec3 Normal;
@@ -25,24 +26,26 @@ void main()
     float diff = max(dot(norm, lightDir), 0.0);
     float diffDir = max(dot(norm, directionalDir), 0.0);
 
-    //diffuse pointLight
-    vec3 diffuse = diff * pointLightCol;
-    //directionalLight
-    //diffuseDir = diffDir * directionalCol;
 
     vec3 viewDir = normalize(cameraPos - fragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    
     vec3 reflectDirDir = reflect(-directionalDir, norm);
     float specDir = pow(max(dot(viewDir, reflectDirDir), 0.0), 32);
 
-    //specular pointLight
-    vec3 specular = specularStrength * spec * pointLightCol;
-    //specular pointLight + directional
-    //vec3 specular = specularStrength * (specDir* directionalCol + spec * pointLightCol);
-
+    vec3 diffuse;
+    vec3 specular;
     vec3 result;
 
+    if(directionalFlag == 1){
+        diffuse = diff * pointLightCol + diffDir * directionalCol;
+        specular = specularStrength * (specDir* directionalCol + spec * pointLightCol);
+    } else{
+        diffuse = diff * pointLightCol;
+        specular = specularStrength * spec * pointLightCol;
+    }
+    
     if(specularFlag == 1){        
         //specular shading
         result = (ambient + diffuse + specular) * vertexColour;

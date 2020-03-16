@@ -115,7 +115,8 @@ public:
 
     virtual void loadDataToGPU() = 0;
 
-    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag) = 0;
+    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, 
+        PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag) = 0;
 
 protected:
     void setupUniformVariables(); //called at end of render
@@ -146,6 +147,7 @@ protected:
     // Directional Light Data
     GLuint mUniformDirectionalDirLoc;
     GLuint mUniformDirectionalColLoc;
+    GLuint mUniformDirectionalFlagLoc;
 
     GLuint mUniformColourLoc;
 
@@ -162,7 +164,7 @@ public:
 
     void loadDataToGPU();
 
-    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag);
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag);
 private:
     Colour mColour;
     float mLength;
@@ -205,4 +207,5 @@ private:
     PointLight mPointLight;
     Directional mDirectional;
     bool mSpecularFlag;
+    bool mDirectionalFlag;
 };
