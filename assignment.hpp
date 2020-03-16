@@ -17,6 +17,7 @@
 #include <magic_enum.hpp>
 
 using namespace atlas;
+using Colour = atlas::math::Vector;
 
 static constexpr float nearVal{1.0f};
 static constexpr float farVal{10000000000.0f};
@@ -29,10 +30,67 @@ struct OpenGLError : std::runtime_error
     OpenGLError(const char* what_arg) : std::runtime_error(what_arg){};
 };
 
+struct SimpleVertex
+{
+    math::Point position{};
+    math::Normal normal{};
+};
 // default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SENSITIVITY = 0.1f;
+const float SENSITIVITY = 0.05f;
+
+class Light {
+public:
+    Colour mColour;
+    float mRadiance;
+};
+
+class Ambient : public Light {
+public:
+    Ambient(Colour col, float rad);
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mColour * mRadiance;
+    }
+
+};
+
+class PointLight : public Light {
+public:
+    PointLight(atlas::math::Point pos, Colour col, float rad);
+
+    atlas::math::Point mPos;
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mRadiance * mColour;
+    }
+
+};
+
+class Directional : public Light {
+public:
+    Directional(atlas::math::Vector dir,  Colour col, float rad);
+
+    atlas::math::Vector mDir;
+
+    Colour mColour;
+
+    float mRadiance;
+
+    Colour L() {
+        return mRadiance * mColour;
+    }
+
+};
 
 
 class Camera
@@ -51,22 +109,21 @@ private:
 
 };
 
-class Triangle
+class Object
 {
 public:
-    Triangle();
-
     void loadShaders();
-
-    void loadDataToGPU(std::array<float, 18> const& vertices);
 
     void reloadShaders();
 
-    void render(bool paused, int width, int height, Camera cam);
-
     void freeGPUData();
 
-private:
+    virtual void loadDataToGPU() = 0;
+
+    virtual void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, 
+        PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag) = 0;
+
+protected:
     void setupUniformVariables(); //called at end of render
 
     float position;
@@ -74,6 +131,8 @@ private:
     // Vertex buffers.
     GLuint mVao;
     GLuint mVbo;
+    // Index Buffer
+    GLuint mEbo;
 
     // Shader data.
     GLuint mVertHandle;
@@ -86,14 +145,63 @@ private:
     GLuint mUniformModelLoc;
     GLuint mUniformViewLoc;
     GLuint mUniformProjectionLoc;
+
+    // Light
+    GLuint mUniformAmbientLoc;
+    // Point Light data
+    GLuint mUniformPointLightPosLoc;
+    GLuint mUniformPointLightColLoc;
+    // Directional Light Data
+    GLuint mUniformDirectionalDirLoc;
+    GLuint mUniformDirectionalColLoc;
+    GLuint mUniformDirectionalFlagLoc;
+
+    GLuint mUniformColourLoc;
+
+    GLuint mUniformCameraPosLoc;
+
+    GLuint mUniformSpecularFlagLoc;
+
 };
+
+
+class Mesh : public Object
+{
+public:
+    Mesh(atlas::utils::ObjMesh, Colour colour);
+    Colour mColour;
+    std::vector<SimpleVertex> mVertices;
+    std::vector<GLuint> mIndices;
+    void loadDataToGPU();
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag);
+
+};
+
+
+
+class Cube : public Object
+{
+public:
+    Cube(float length, Colour colour);
+
+    void loadDataToGPU();
+
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag);
+private:
+    Colour mColour;
+    float mLength;
+    std::array<float, 18*12> mVertices;
+
+};
+
+
 
 class Program
 {
 public:
-    Program(int width, int height, std::string title, Camera cam);
+    Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional);
 
-    void run(Triangle& object);
+    void run(Object& obj, Object& obj2);
 
     void freeGPUData();
 
@@ -110,9 +218,16 @@ private:
     glx::WindowCallbacks callbacks;
 
     bool paused;
+    bool meshFlag;
     bool firstMouse;
     float lastX;
     float lastY;
 
     Camera mCamera; 
+    
+    glm::vec3 mAmbient;
+    PointLight mPointLight;
+    Directional mDirectional;
+    bool mSpecularFlag;
+    bool mDirectionalFlag;
 };
