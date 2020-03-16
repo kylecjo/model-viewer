@@ -173,7 +173,7 @@ public:
     std::vector<SimpleVertex> mVertices;
     std::vector<GLuint> mIndices;
     void loadDataToGPU();
-    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight);
+    void render(bool paused, int width, int height, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag);
 
 };
 

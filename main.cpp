@@ -148,7 +148,7 @@ void Mesh::loadDataToGPU() {
 void Mesh::render([[maybe_unused]] bool paused,
     [[maybe_unused]] int width,
     [[maybe_unused]] int height,
-    Camera cam, glm::vec3 ambient, PointLight pointLight)
+    Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional, bool specularFlag, bool directionalFlag)
 {
     reloadShaders();
 
@@ -182,6 +182,10 @@ void Mesh::render([[maybe_unused]] bool paused,
     glUniform3fv(mUniformPointLightPosLoc, 1, glm::value_ptr(pointLight.mPos));
     glUniform3fv(mUniformPointLightColLoc, 1, glm::value_ptr(pointLight.mColour));
     glUniform3fv(mUniformCameraPosLoc, 1, glm::value_ptr(cam.mEye));
+    glUniform3fv(mUniformDirectionalDirLoc, 1, glm::value_ptr(directional.mDir));
+    glUniform3fv(mUniformDirectionalColLoc, 1, glm::value_ptr(directional.mColour));
+    glUniform1i(mUniformSpecularFlagLoc, (GLint)specularFlag);
+    glUniform1i(mUniformDirectionalFlagLoc, (GLint)directionalFlag);
 
 
     // tell OpenGL which vertex array object to use to render the Triangle
@@ -386,10 +390,6 @@ Directional::Directional(atlas::math::Vector dir, Colour col, float rad) :
 
 // ===------------IMPLEMENTATIONS-------------===
 
-Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight) :
-    settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight},
-    firstMouse{true}, lastX{settings.size.width /2.0f}, lastY{settings.size.width/2.0f},
-    firstMouse{ true }, lastX{ settings.size.width / 2.0f }, lastY{ settings.size.width / 2.0f }, mSpecularFlag{}, mDirectionalFlag{}, meshFlag{}
 Program::Program(int width, int height, std::string title, Camera cam, glm::vec3 ambient, PointLight pointLight, Directional directional) :
     settings{}, callbacks{}, paused{}, mWindow{ nullptr }, mCamera{ cam }, mAmbient{ambient}, mPointLight{pointLight}, mDirectional{directional},
     firstMouse{ true }, lastX{ settings.size.width / 2.0f }, lastY{ settings.size.width / 2.0f }, mSpecularFlag{}, mDirectionalFlag{}, meshFlag{}
@@ -494,10 +494,10 @@ void Program::run(Object& obj, Object& obj2)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (!meshFlag) {
-            obj.render(paused, width, height, mCamera, mAmbient, mPointLight);
+            obj.render(paused, width, height, mCamera, mAmbient, mPointLight, mDirectional, mSpecularFlag, mDirectionalFlag);
         }
         else {
-            obj2.render(paused, width, height, mCamera, mAmbient, mPointLight);
+            obj2.render(paused, width, height, mCamera, mAmbient, mPointLight, mDirectional, mSpecularFlag, mDirectionalFlag);
 
         }
 
@@ -548,11 +548,11 @@ int main()
         PointLight p{ atlas::math::Point{0.0f, 3.0f, 3.0f}, Colour{1.0f, 1.0f, 1.0f }, 2.0f };
         Directional d{ atlas::math::Vector{0.0f, 1.0f, 0.0f} , Colour{ 1.0f, 1.0f, 1.0f }, 0.5f };
 
-        Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p};
+        Program prog{1280, 720, "CSC305 Assignment 3", cam, ambient, p, d};
         
         std::string shaderRoot{ ShaderPath };
 
-        atlas::utils::ObjMesh m = atlas::utils::loadObjMesh(shaderRoot + "bunny.obj").value();
+        atlas::utils::ObjMesh m = atlas::utils::loadObjMesh(shaderRoot + "suzanne.obj").value();
         Mesh mesh{ m, Colour {1.0f, 0.647f, 0.0f} };
         mesh.loadShaders();
         mesh.loadDataToGPU();
