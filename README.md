@@ -9,11 +9,9 @@ Model Viewer built for CSC 305 class in OpenGL
 
 ## Features 
 
-- [x] Mirror reflections
-- [x] Glossy Reflections
-- [x] Simple Transparency
-- [x] Procedural Textures
-- [x] Shadows
-- [x] Ambient Occlusion
-- [x] Area Lights
+- [x] Directional Light
+- [x] Specular Reflection
+- [x] Specular Shading with Multiple Light sources
+- [x] First-Person View Camera
+- [x] Loads a simple mesh
 
